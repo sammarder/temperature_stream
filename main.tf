@@ -64,4 +64,5 @@ module "dynamo" {
 module "stream" {
   source = "./modules/kinesis"
   stream_name = local.stream_name
+  key_arn = module.security.key_arn
 }
