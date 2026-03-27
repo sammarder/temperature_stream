@@ -3,6 +3,7 @@ import json
 import os
 import boto3
 from botocore.exceptions import ClientError
+from decimal import Decimal
 
 # Initialize the DynamoDB resource outside the handler for connection pooling
 dynamodb = boto3.resource('dynamodb')
@@ -14,14 +15,19 @@ def lambda_handler(event, context):
     
     for record in event['Records']:
         try:
+            print(record)
+            raw_ts = record['kinesis']['approximateArrivalTimestamp']
             # 1. Decode the Kinesis data
             payload = base64.b64decode(record['kinesis']['data']).decode('utf-8')
             data = json.loads(payload)
             
             # 2. Add some metadata (optional but recommended)
             data['kinesis_seq'] = record['kinesis']['sequenceNumber']
-            data['processed_at'] = record['approximateArrivalTimestamp']
             
+            data['processed_at'] = Decimal(str(raw_ts))
+            
+            if 'temp_celsius' in data:
+                data['temp_celsius'] = Decimal(str(data['temp_celsius']))
             # 3. Write to DynamoDB
             # This assumes your 'data' dictionary contains the Primary Key for your table
             table.put_item(Item=data)
